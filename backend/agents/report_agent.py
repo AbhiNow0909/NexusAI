@@ -51,7 +51,8 @@ async def run_report_agent(
             "Reference physician names, specialties, states, and claim counts concretely."
         )
 
-        response = model.generate_content(prompt)
+        import asyncio
+        response = await asyncio.to_thread(model.generate_content, prompt)
         markdown = response.text.strip()
 
         # Optionally save .docx

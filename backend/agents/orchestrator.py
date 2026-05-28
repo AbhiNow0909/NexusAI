@@ -78,7 +78,8 @@ async def run_orchestrator(query: str, preferences: dict, sse_queue: asyncio.Que
 
         max_iterations = 10
         for _ in range(max_iterations):
-            response = model.generate_content(messages)
+            # Run blocking gRPC call in a thread so the event loop (and SSE stream) stay responsive
+            response = await asyncio.to_thread(model.generate_content, messages)
             candidate = response.candidates[0]
 
             tool_calls = [

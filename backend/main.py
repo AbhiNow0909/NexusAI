@@ -64,16 +64,28 @@ async def run_query(request: QueryRequest):
     queue: asyncio.Queue = asyncio.Queue()
 
     async def event_generator():
-        asyncio.create_task(
+        # Keep a strong reference so the task isn't garbage-collected mid-stream
+        task = asyncio.create_task(
             run_orchestrator(request.query, request.preferences.model_dump(), queue)
         )
-        while True:
-            event = await queue.get()
-            yield f"data: {json.dumps(event)}\n\n"
-            if event.get("type") == "done" or event.get("type") == "error":
-                break
+        try:
+            while True:
+                event = await asyncio.wait_for(queue.get(), timeout=300)
+                yield f"data: {json.dumps(event, default=str)}\n\n"
+                if event.get("type") in ("done", "error"):
+                    break
+        except asyncio.TimeoutError:
+            yield f"data: {json.dumps({'type': 'error', 'message': 'Agent timed out after 5 minutes.'})}\n\n"
+        except Exception as exc:
+            yield f"data: {json.dumps({'type': 'error', 'message': str(exc)})}\n\n"
+        finally:
+            task.cancel()
 
-    return StreamingResponse(event_generator(), media_type="text/event-stream")
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 # ─── GET /physicians ─────────────────────────────────────────────────────────

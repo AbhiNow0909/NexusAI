@@ -53,7 +53,8 @@ async def run_ppt_agent(
             "Return ONLY a valid JSON object — no markdown fences, no extra text."
         )
 
-        response = model.generate_content(prompt)
+        import asyncio
+        response = await asyncio.to_thread(model.generate_content, prompt)
         raw = response.text.strip()
         if raw.startswith("```"):
             raw = raw.split("```")[1]

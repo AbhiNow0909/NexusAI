@@ -25,7 +25,8 @@ async def _generate_code(code_goal: str, dataset: str, chart_type: str) -> str:
         f"Dataset (JSON string):\n{dataset}\n\n"
         "Return ONLY the Python code — no markdown fences, no explanation."
     )
-    response = model.generate_content(prompt)
+    import asyncio
+    response = await asyncio.to_thread(model.generate_content, prompt)
     code = response.text.strip()
     if code.startswith("```"):
         code = code.split("```")[1]
@@ -43,7 +44,8 @@ async def _fix_code(original_code: str, error_message: str) -> str:
         f"Original code:\n{original_code}\n\n"
         f"Error:\n{error_message}"
     )
-    response = model.generate_content(prompt)
+    import asyncio
+    response = await asyncio.to_thread(model.generate_content, prompt)
     code = response.text.strip()
     if code.startswith("```"):
         code = code.split("```")[1]

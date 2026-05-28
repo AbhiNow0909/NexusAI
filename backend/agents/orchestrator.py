@@ -61,6 +61,24 @@ def summarize_result(result: dict) -> str:
     return "Done."
 
 
+async def _generate_with_retry(model, messages, sse_queue: asyncio.Queue, max_retries: int = 3):
+    """Calls model.generate_content with exponential backoff on 429 rate-limit errors."""
+    import re
+    for attempt in range(max_retries):
+        try:
+            return await asyncio.to_thread(model.generate_content, messages)
+        except Exception as exc:
+            is_rate_limit = "429" in str(exc) or "RESOURCE_EXHAUSTED" in str(exc)
+            if not is_rate_limit or attempt == max_retries - 1:
+                raise
+            # Parse suggested retry delay from the error message if present
+            match = re.search(r"retry in (\d+)", str(exc))
+            wait = int(match.group(1)) + 5 if match else 30 * (2 ** attempt)
+            await sse_queue.put({"type": "orchestrator_thinking",
+                                 "message": f"Rate limit hit — waiting {wait}s before retry ({attempt + 1}/{max_retries})…"})
+            await asyncio.sleep(wait)
+
+
 async def run_orchestrator(query: str, preferences: dict, sse_queue: asyncio.Queue) -> None:
     try:
         genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
@@ -79,7 +97,7 @@ async def run_orchestrator(query: str, preferences: dict, sse_queue: asyncio.Que
         max_iterations = 10
         for _ in range(max_iterations):
             # Run blocking gRPC call in a thread so the event loop (and SSE stream) stay responsive
-            response = await asyncio.to_thread(model.generate_content, messages)
+            response = await _generate_with_retry(model, messages, sse_queue)
             candidate = response.candidates[0]
 
             tool_calls = [

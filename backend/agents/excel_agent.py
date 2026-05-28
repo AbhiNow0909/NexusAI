@@ -13,6 +13,26 @@ from openpyxl.utils import get_column_letter
 
 ARTIFACTS_DIR = Path(__file__).parent.parent / "artifacts"
 
+
+def _parse_json_list(raw) -> list:
+    if not isinstance(raw, str):
+        return raw if isinstance(raw, list) else []
+    raw = raw.strip()
+    start = raw.find("[")
+    if start == -1:
+        start = raw.find("{")
+    if start == -1:
+        return []
+    result, _ = json.JSONDecoder().raw_decode(raw[start:])
+    if isinstance(result, list):
+        return result
+    if isinstance(result, dict):
+        return [result]
+    if isinstance(result, str):
+        return _parse_json_list(result)
+    return []
+
+
 HEADER_FILL = PatternFill(start_color="1A2E4A", end_color="1A2E4A", fill_type="solid")
 HEADER_FONT = Font(color="FFFFFF", bold=True, size=11)
 ALT_FILL = PatternFill(start_color="F2F2F2", end_color="F2F2F2", fill_type="solid")
@@ -26,7 +46,7 @@ async def run_excel_agent(
     icd10_codes: list[str] | None = None,
 ) -> dict:
     try:
-        physicians = json.loads(physician_list) if isinstance(physician_list, str) else physician_list
+        physicians = _parse_json_list(physician_list)
 
         wb = Workbook()
 
@@ -98,10 +118,10 @@ def _build_raw_sheet(wb: Workbook, physicians: list):
 
 
 def _build_pivot_sheet(wb: Workbook, physicians: list):
-    ws = wb.create_sheet("Pivot: State × Specialty")
+    ws = wb.create_sheet("Pivot State x Specialty")
 
-    states = sorted({p["state"] for p in physicians})
-    specialties = sorted({p["specialty"] for p in physicians})
+    states = sorted({p.get("state", "Unknown") for p in physicians if p.get("state")})
+    specialties = sorted({p.get("specialty", "Unknown") for p in physicians if p.get("specialty")})
 
     # Header row
     ws.cell(row=1, column=1, value="State \\ Specialty")
@@ -117,7 +137,7 @@ def _build_pivot_sheet(wb: Workbook, physicians: list):
     # Aggregate claim volumes
     pivot: dict[tuple, int] = defaultdict(int)
     for p in physicians:
-        pivot[(p["state"], p["specialty"])] += p.get("totalNSCLCClaims", 0)
+        pivot[(p.get("state", "Unknown"), p.get("specialty", "Unknown"))] += p.get("totalNSCLCClaims", 0)
 
     for row_idx, state in enumerate(states, start=2):
         ws.cell(row=row_idx, column=1, value=state).font = Font(bold=True)

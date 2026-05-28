@@ -12,6 +12,25 @@ import google.generativeai as genai
 ARTIFACTS_DIR = Path(__file__).parent.parent / "artifacts"
 
 
+def _parse_json_list(raw) -> list:
+    if not isinstance(raw, str):
+        return raw if isinstance(raw, list) else []
+    raw = raw.strip()
+    start = raw.find("[")
+    if start == -1:
+        start = raw.find("{")
+    if start == -1:
+        return []
+    result, _ = json.JSONDecoder().raw_decode(raw[start:])
+    if isinstance(result, list):
+        return result
+    if isinstance(result, dict):
+        return [result]
+    if isinstance(result, str):
+        return _parse_json_list(result)
+    return []
+
+
 def load_prompt(name: str) -> str:
     path = Path(__file__).parent.parent / "prompts" / f"{name}.txt"
     return path.read_text(encoding="utf-8")
@@ -25,7 +44,7 @@ async def run_report_agent(
     geographic_scope: str = "",
 ) -> dict:
     try:
-        physicians = json.loads(physician_list) if isinstance(physician_list, str) else physician_list
+        physicians = _parse_json_list(physician_list)
 
         genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
         model = genai.GenerativeModel(

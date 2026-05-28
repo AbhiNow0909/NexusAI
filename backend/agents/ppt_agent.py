@@ -16,6 +16,29 @@ from pptx.util import Inches, Pt
 
 ARTIFACTS_DIR = Path(__file__).parent.parent / "artifacts"
 
+
+def _parse_json_list(raw) -> list:
+    """Parse a physician list that may be a Python list, a JSON string, or
+    a JSON string with trailing prose (Gemini occasionally appends text)."""
+    if not isinstance(raw, str):
+        return raw if isinstance(raw, list) else []
+    raw = raw.strip()
+    # Find the opening bracket; skip any leading text the model prepended
+    start = raw.find("[")
+    if start == -1:
+        start = raw.find("{")
+    if start == -1:
+        return []
+    result, _ = json.JSONDecoder().raw_decode(raw[start:])
+    if isinstance(result, list):
+        return result
+    if isinstance(result, dict):
+        return [result]
+    # Double-encoded: result is itself a JSON string
+    if isinstance(result, str):
+        return _parse_json_list(result)
+    return []
+
 # DocNexus brand colours
 NAVY = RGBColor(0x1A, 0x2E, 0x4A)
 TEAL = RGBColor(0x00, 0x8C, 0x8C)
@@ -36,7 +59,7 @@ async def run_ppt_agent(
     style_notes: str = "",
 ) -> dict:
     try:
-        physicians = json.loads(physician_list) if isinstance(physician_list, str) else physician_list
+        physicians = _parse_json_list(physician_list)
 
         # --- Step 1: Ask Gemini to generate structured slide content ---
         genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
@@ -60,7 +83,12 @@ async def run_ppt_agent(
             raw = raw.split("```")[1]
             if raw.startswith("json"):
                 raw = raw[4:]
-        content = json.loads(raw)
+        # Find first { so leading prose from the model doesn't break parsing,
+        # then raw_decode so trailing text after the JSON object is ignored.
+        start = raw.find("{")
+        if start == -1:
+            raise ValueError(f"No JSON object found in model response: {raw[:200]}")
+        content, _ = json.JSONDecoder().raw_decode(raw[start:])
 
         # --- Step 2: Build the .pptx with python-pptx ---
         prs = Presentation()

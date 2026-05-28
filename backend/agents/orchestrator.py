@@ -66,7 +66,7 @@ async def run_orchestrator(query: str, preferences: dict, sse_queue: asyncio.Que
         genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
 
         model = genai.GenerativeModel(
-            model_name="gemini-2.0-flash",
+            model_name=os.environ.get("GEMINI_MODEL", "gemini-2.0-flash"),
             system_instruction=load_prompt("orchestrator"),
             tools=TOOL_DECLARATIONS,
         )

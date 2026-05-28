@@ -29,7 +29,7 @@ async def run_report_agent(
 
         genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
         model = genai.GenerativeModel(
-            model_name="gemini-2.0-flash",
+            model_name=os.environ.get("GEMINI_MODEL", "gemini-2.0-flash"),
             system_instruction=load_prompt("report_agent"),
         )
 

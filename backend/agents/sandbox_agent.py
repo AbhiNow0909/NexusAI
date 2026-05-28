@@ -16,7 +16,7 @@ def load_prompt(name: str) -> str:
 
 async def _generate_code(code_goal: str, dataset: str, chart_type: str) -> str:
     model = genai.GenerativeModel(
-        model_name="gemini-2.0-flash",
+        model_name=os.environ.get("GEMINI_MODEL", "gemini-2.0-flash"),
         system_instruction=load_prompt("sandbox_agent"),
     )
     prompt = (
@@ -36,7 +36,7 @@ async def _generate_code(code_goal: str, dataset: str, chart_type: str) -> str:
 
 
 async def _fix_code(original_code: str, error_message: str) -> str:
-    model = genai.GenerativeModel(model_name="gemini-2.0-flash")
+    model = genai.GenerativeModel(model_name=os.environ.get("GEMINI_MODEL", "gemini-2.0-flash"))
     prompt = (
         "The following Python code raised an error when executed in a sandbox.\n"
         "Fix it so it runs without errors. Return ONLY the corrected Python code — no fences.\n\n"

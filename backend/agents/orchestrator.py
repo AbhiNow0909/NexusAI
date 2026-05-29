@@ -138,6 +138,8 @@ async def run_orchestrator(query: str, preferences: dict, sse_queue: asyncio.Que
                     event["stdout"] = result["stdout"]
                 if "chart_b64" in result:
                     event["chart_b64"] = result["chart_b64"]
+                if "code" in result:
+                    event["code"] = result["code"]
                 if "physicians" in result:
                     event["count"] = len(result["physicians"])
                 await sse_queue.put(event)

@@ -630,7 +630,7 @@ RULES
 - SSE event schema defined
 - System prompt structure documented
 
-### 🔲 Phase 1 — Scaffolding (start here)
+### ✅ Phase 1 — Scaffolding (start here)
 - [ ] Create repo, folder structure, `.env.example`, `.gitignore`
 - [ ] Generate `physicians.json` with 30+ records
 - [ ] FastAPI skeleton: all 3 endpoints stubbed, CORS enabled, health check

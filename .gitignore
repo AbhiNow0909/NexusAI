@@ -12,6 +12,17 @@ build/
 backend/.env
 .env
 
+# Dev scripts
+backend/test_gemini.py
+backend/test_imports.py
+backend/test_sse.py
+backend/test_fc.py
+backend/test_routing.py
+backend/test_e2b.py
+backend/test_bugfix.py
+backend/test_sandbox_sse.py
+backend/artifacts/test_chart.png
+
 # Artifacts (runtime-generated)
 backend/artifacts/*.pptx
 backend/artifacts/*.xlsx

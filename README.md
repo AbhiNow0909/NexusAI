@@ -6,12 +6,6 @@ Built for the DocNexus Engineering Internship Take-Home Assignment.
 
 ---
 
-## Live Demo
-
-> **Loom walkthrough:** *(link to be added before submission)*
-
----
-
 ## Architecture
 
 ### System Overview
@@ -86,16 +80,16 @@ The Orchestrator reads the user's query and preferences, then calls Gemini with 
 
 | Layer | Technology |
 |---|---|
-| LLM provider | Google Gemini (`gemini-2.5-flash` or `gemini-flash-lite-latest`) |
+| LLM provider | Google Gemini (`gemini-2.5-flash`) |
 | LLM SDK | `google-generativeai` 0.8.3 (native function calling) |
-| Agent framework | **Custom loop** — no LangChain |
+| Agent framework | **Custom loop**|
 | Backend | FastAPI + uvicorn (Python 3.13) |
 | Frontend | React 18 + Vite 5 |
 | PPT generation | `python-pptx` |
 | Excel generation | `openpyxl` |
 | Word export | `python-docx` |
-| Sandbox execution | E2B Code Interpreter (`e2b-code-interpreter`) |
-| Live trace | SSE via FastAPI `StreamingResponse` + browser `fetch` ReadableStream |
+| Sandbox execution | E2B Code Interpreter |
+| Live trace | SSE via FastAPI `StreamingResponse`|
 | Mock data | 35-record `physicians.json` loaded in-memory at startup |
 
 ---
@@ -212,7 +206,7 @@ These five queries cover all agent routing paths and are the recommended test su
 
 LangChain and similar frameworks add abstraction layers between the code and the LLM. For this assignment — where the orchestration logic is the core deliverable — that's a liability:
 
-- **Transparency**: Every tool dispatch, every message in the conversation history, every retry decision is visible in `orchestrator.py`. There is no magic.
+- **Transparency**: Every tool dispatch, every message in the conversation history, every retry decision is visible in `orchestrator.py`.
 - **Debuggability**: When Gemini returns an unexpected response format, you can see exactly what it returned and fix the parsing. With a framework, you'd be debugging the framework's internals.
 - **Gemini native function calling**: `google-generativeai`'s `FunctionDeclaration` → `generate_content` → `function_call` loop is clean enough that an abstraction layer adds nothing.
 
@@ -226,7 +220,7 @@ The custom loop is ~80 lines of code. It handles tool dispatch, conversation his
 Replace `physicians.json` with live calls to the **CMS Open Payments API** and **NPI Registry**. Both are public APIs. This would give real prescriber data, real claim volumes, and the ability to query any specialty/geography — not just the 35 mock records. The `get_physician_data` tool interface would stay identical; only the data layer changes.
 
 ### 2. Parallel Agent Execution
-When a query requests both a PPT and an Excel file, both agents currently run sequentially. With `asyncio.gather`, they could run in parallel, cutting end-to-end latency roughly in half for multi-artifact queries. The orchestrator loop would need to batch tool calls from the same Gemini turn rather than dispatching one at a time.
+When a query requests both a PPT and an Excel file, both agents currently run sequentially. They could be made to run in parallel, cutting end-to-end latency roughly in half for multi-artifact queries. The orchestrator loop would need to batch tool calls from the same Gemini turn rather than dispatching one at a time.
 
 ### 3. Session Persistence and Conversation Memory
 Currently every query starts fresh. A follow-up like *"now filter that to only California"* has no context from the previous turn. Adding a session ID (stored in Redis or a simple SQLite table) with the last N turns of conversation history would enable multi-turn workflows — a key requirement for real field rep use cases.

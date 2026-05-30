@@ -6,6 +6,10 @@ Built for the DocNexus Engineering Internship Take-Home Assignment.
 
 ---
 
+Google Drive Link for Demonstration Video : https://drive.google.com/drive/folders/1uRLvWUI4P9mawsjWuYIdu0eMiSitC4l4?usp=sharing
+
+---
+
 ## Architecture
 
 ### System Overview

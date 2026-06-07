@@ -1,4 +1,4 @@
-# DocNexus AI — Physician Intelligence Platform
+# NexusAI — Physician Intelligence Platform
 
 An LLM-powered multi-agent orchestration system that accepts natural language queries about NSCLC physician data and returns real downloadable artifacts — PowerPoint decks, Excel workbooks, written reports, and executed code analysis with charts — without any manual steps.
 
